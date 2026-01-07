@@ -34,7 +34,8 @@ hf_pipeline = pipeline(
     "text-generation",
     model=model_name,
     max_new_tokens=300,
-    temperature=0.0,
+    do_sample=False,
+    temperature=1.0,
     device_map="auto"
 )
 
@@ -45,6 +46,7 @@ llm = HuggingFacePipeline(pipeline=hf_pipeline)
 # =====================
 template = """Use the following context to answer the question.
 Cite the source of each fact in parentheses with the filename.
+Do not copy citations like [15] or [16] from the text.
 If you don't know the answer, say you don't know. Answer in clear, complete sentences.
 
 Context:
@@ -77,20 +79,38 @@ qa_chain = RetrievalQA.from_chain_type(
 question = "Why is self-attention important for machine translation?"
 result = qa_chain({"query": question})
 
+
+raw_answer = result["result"]
+
+# Split at the last occurrence of "Answer:" and take what comes after
+answer = raw_answer.split("Answer:")[-1].strip()
+
 # =====================
 # 7️⃣ Print answer and sources
 # =====================
-print("Answer:\n", result["result"])
+print("Answer:\n", answer)
 print("\nSources:")
 for doc in result["source_documents"]:
     print("-", doc.metadata.get("source", "Unknown"))
 
 
 '''
-Current error - 
-ImportError:
- requires the protobuf library but it was not found in your environment. Check out the instructions on the
-installation page of its repo: https://github.com/protocolbuffers/protobuf/tree/master/python#installation and follow the ones
-that match your environment. Please note that you may need to restart your runtime after installation.
+Improvements:
+- better chunking
+- improve prompt
+- add full comments
+- slow generating answers?
+- preporcess docs more
+- add in csv/more docs
+
+Current output:
+Answer:
+ Self-attention is important for machine translation because it has been used successfully in a variety of tasks, including machine translation, and it can help the Transformer model to achieve a new state of the art on both WMT 2014 English-to-German and WMT 2014 English-to-French translation tasks (source: context).
+
+Sources:
+- data\attention_is_all_you_need.txt
+- data\attention_is_all_you_need.txt
+- data\human_parity.txt
+
 '''
 
